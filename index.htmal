@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ITI Modasa Registration</title>
+    <style>
+        body { background-color: #e0f2f1; font-family: sans-serif; display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { text-align: center; color: #00796b; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input[type="text"], input[type="email"], input[type="number"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        .otp-row { display: flex; gap: 10px; margin-top: 5px; }
+        button { padding: 10px 15px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-send { background-color: #00897b; color: white; }
+        .btn-verify { background-color: #f4511e; color: white; }
+        .btn-submit { background-color: #2e7d32; color: white; width: 100%; font-size: 18px; margin-top: 20px; }
+        .msg { font-size: 12px; margin-top: 5px; font-weight: bold; }
+
+        /* પ્રિન્ટ માટેની સ્ટાઇલ */
+        @media print {
+            button, .btn-send, .btn-verify, .otp-row, .msg { display: none !important; }
+            .container { box-shadow: none; border: 1px solid #ccc; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>ITI MODASA ADMISSION</h2>
+    <form id="regForm">
+        <div class="form-group">
+            <label>Full Name</label>
+            <div style="display: flex; gap: 5px;">
+                <input type="text" name="firstName" placeholder="First Name" required>
+                <input type="text" name="lastName" placeholder="Last Name" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Gender</label>
+            <input type="radio" name="gender" value="Male" required> Male
+            <input type="radio" name="gender" value="Female"> Female
+        </div>
+
+        <div class="form-group">
+            <label>Mobile Number</label>
+            <div class="otp-row">
+                <input type="number" id="mobile" name="mobile" placeholder="Enter 10 digit" required>
+                <button type="button" class="btn-send" onclick="sendOTP('mobile', event)">Send OTP</button>
+            </div>
+            <div class="otp-row">
+                <input type="text" id="m_otp_input" placeholder="Enter Mobile OTP">
+                <button type="button" class="btn-verify" onclick="verifyOTP('mobile')">Verify</button>
+            </div>
+            <div id="m_msg" class="msg"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Email ID</label>
+            <div class="otp-row">
+                <input type="email" id="email" name="email" placeholder="example@mail.com" required>
+                <button type="button" class="btn-send" onclick="sendOTP('email', event)">Send OTP</button>
+            </div>
+            <div class="otp-row">
+                <input type="text" id="e_otp_input" placeholder="Enter Email OTP">
+                <button type="button" class="btn-verify" onclick="verifyOTP('email')">Verify</button>
+            </div>
+            <div id="e_msg" class="msg"></div>
+        </div>
+
+        <div class="form-group">
+            <label>Trade</label>
+            <select name="trade" required>
+                <option value="">Select Trade</option>
+                <option>COPA</option>
+                <option>Fitter</option>
+                <option>Welder</option>
+            </select>
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn-submit">Submit Application</button>
+        <button type="button" id="printBtn" class="btn-send" style="width: 100%; margin-top: 10px; display: none;" onclick="window.print()">Download / Print Application</button>
+    </form>
+</div>
+
+<script>
+    const scriptURL = 'તમારી_GOOGLE_SCRIPT_URL_અહીં_નાખો'; //
+    let generatedOTPs = { mobile: null, email: null };
+    let verifiedStatus = { mobile: false, email: false };
+    let timers = { mobile: null, email: null };
+
+    function sendOTP(type, event) {
+        let btn = event.target;
+        let seconds = 30;
+        btn.disabled = true;
+
+        let val = Math.floor(1000 + Math.random() * 9000); // 4 digit OTP
+        generatedOTPs[type] = val;
+        alert(type.toUpperCase() + " OTP: " + val);
+
+        timers[type] = setInterval(function() {
+            btn.innerHTML = `Resend in ${seconds}s`;
+            seconds--;
+            if (seconds < 0) {
+                clearInterval(timers[type]);
+                btn.disabled = false;
+                btn.innerHTML = "Send OTP";
+            }
+        }, 1000);
+    }
+
+    function verifyOTP(type) {
+        let userInput = document.getElementById(type === 'mobile' ? 'm_otp_input' : 'e_otp_input').value;
+        let msgElement = document.getElementById(type === 'mobile' ? 'm_msg' : 'e_msg');
+
+        if (userInput == generatedOTPs[type]) {
+            msgElement.innerHTML = "Verified ✓";
+            msgElement.style.color = "green"; //
+            verifiedStatus[type] = true;
+        } else {
+            msgElement.innerHTML = "Invalid OTP ✗";
+            msgElement.style.color = "red"; //
+            verifiedStatus[type] = false;
+        }
+    }
+
+    document.getElementById('regForm').onsubmit = function(e) {
+        e.preventDefault();
+        
+        if(!verifiedStatus.mobile || !verifiedStatus.email) {
+            alert("મહેરબાની કરીને પહેલા Mobile અને Email OTP વેરીફાઈ કરો!");
+            return;
+        }
+
+        const btn = document.getElementById('submitBtn');
+        btn.innerHTML = "Submitting...";
+        btn.disabled = true;
+
+        fetch(scriptURL, { method: 'POST', body: new FormData(this)})
+            .then(response => {
+                alert("ડેટા સફળતાપૂર્વક સેવ થઈ ગયો છે.");
+                document.getElementById('printBtn').style.display = 'block'; // પ્રિન્ટ બટન બતાવો
+                btn.innerHTML = "Submit Application";
+                btn.disabled = false;
+                // ફોર્મ રીસેટ અહીં કરી શકાય
+            })
+            .catch(error => alert("ભૂલ: " + error.message));
+    };
+</script>
+</body>
+</html>
